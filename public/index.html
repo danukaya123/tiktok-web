@@ -3,80 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quizontal TikTok Downloader</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>TikTok Downloader</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; }
+    input { width: 60%; padding: 0.5rem; font-size: 1rem; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; margin-left: 0.5rem; }
+    video, audio { margin-top: 1rem; max-width: 90%; }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body>
+  <h1>📥 TikTok Downloader</h1>
+  <input type="text" id="url" placeholder="Paste TikTok link here" />
+  <button onclick="downloadTikTok()">Download</button>
 
-  <div class="w-full max-w-xl bg-white rounded-xl shadow-lg p-6">
-    <h1 class="text-3xl font-bold text-center mb-6">📥 Quizontal TikTok Downloader</h1>
-
-    <input
-      type="text"
-      id="tt-url"
-      placeholder="Paste TikTok video URL here"
-      class="border p-3 rounded w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-
-    <button
-      id="fetchTtBtn"
-      class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded w-full font-semibold transition"
-    >
-      Get Video
-    </button>
-
-    <div id="tt-status" class="mt-6"></div>
-  </div>
+  <div id="result"></div>
 
   <script>
-    const status = document.getElementById("tt-status");
-
-    document.getElementById("fetchTtBtn").addEventListener("click", async () => {
-      const url = document.getElementById("tt-url").value.trim();
-      if (!url) return alert("Please paste a TikTok video URL!");
-
-      status.innerHTML = "<p class='text-gray-600'>Fetching video info...</p>";
+    async function downloadTikTok() {
+      const url = document.getElementById('url').value;
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = "⏳ Fetching...";
 
       try {
-        const res = await fetch(`/api/tiktok-info?url=${encodeURIComponent(url)}`);
+        const res = await fetch(`/api/tiktok?url=${encodeURIComponent(url)}`);
         const data = await res.json();
 
-        if (!data.ok) {
-          status.innerHTML = `<p class="text-red-500">${data.message}</p>`;
+        if (data.error) {
+          resultDiv.innerHTML = "❌ " + data.error;
           return;
         }
 
-        const { title, download_mp4_1, download_mp4_hd } = data.result;
-
-        // Clear previous buttons
-        status.innerHTML = `<h2 class="text-lg font-semibold mb-2 truncate">${title}</h2>`;
-
-        const container = document.createElement("div");
-        container.className = "flex gap-2 flex-wrap";
-
-        const createDownloadButton = (label, videoUrl) => {
-          const btn = document.createElement("button");
-          btn.textContent = label;
-          btn.className = "bg-green-600 hover:bg-green-700 text-white p-2 rounded font-medium transition";
-          btn.addEventListener("click", () => {
-            const a = document.createElement("a");
-            a.href = `/api/tiktok-download?url=${encodeURIComponent(videoUrl)}&title=${encodeURIComponent(title)}`;
-            a.click();
-          });
-          return btn;
-        };
-
-        container.appendChild(createDownloadButton("HD", download_mp4_hd || download_mp4_1));
-        container.appendChild(createDownloadButton("SD", download_mp4_1));
-
-        status.appendChild(container);
-
-      } catch (e) {
-        console.error(e);
-        status.innerHTML = "<p class='text-red-500'>Failed to fetch video</p>";
+        resultDiv.innerHTML = `
+          <h2>${data.title}</h2>
+          <p>⬇️ <a href="${data.noWatermark}" target="_blank">Download No-Watermark Video</a></p>
+          <p>⬇️ <a href="${data.watermark}" target="_blank">Download Watermark Video</a></p>
+          <p>🎧 <a href="${data.audio}" target="_blank">Download Audio</a></p>
+          <video controls src="${data.noWatermark}"></video>
+          <audio controls src="${data.audio}"></audio>
+        `;
+      } catch (err) {
+        console.error(err);
+        resultDiv.innerHTML = "❌ Failed to fetch video.";
       }
-    });
+    }
   </script>
-
 </body>
 </html>
