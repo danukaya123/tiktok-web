@@ -1,20 +1,15 @@
 // api/tiktok-download.js
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
-const he = require("he");
-
-module.exports = async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-
+export default async function handler(req, res) {
   try {
-    const url = (req.query.url || "").toString().trim();
-    const title = (req.query.title || "tiktok_video").toString().trim();
+    const fetch = (await import("node-fetch")).default;
+    const he = await import("he");
+
+    const url = (req.query.url || "").trim();
+    const title = (req.query.title || "tiktok_video").trim();
 
     if (!url) return res.status(400).send("Missing `url` parameter");
 
+    // Clean title and add brand prefix
     const safeTitle = he.decode(title)
       .normalize("NFC")
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
@@ -24,12 +19,17 @@ module.exports = async function handler(req, res) {
 
     const filename = `quizontal_${safeTitle}.mp4`;
 
-    // Redirect to video URL with download headers
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.redirect(url);
+    // Fetch video from TikTok CDN
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch video");
 
+    // Force download headers
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    response.body.pipe(res);
   } catch (err) {
     console.error("TikTok Download error:", err);
     res.status(500).send("Failed to download video");
   }
-};
+}
