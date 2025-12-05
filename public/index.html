@@ -1,26 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TikTok Downloader</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok Downloader</title>
 </head>
 <body>
   <h1>TikTok Downloader</h1>
 
-  <p>Click below to download:</p>
+  <form id="downloadForm">
+    <input type="text" id="url" placeholder="Paste TikTok video URL" required />
+    <select id="type">
+      <option value="video">Video (No WM)</option>
+      <option value="audio">Audio (MP3)</option>
+    </select>
+    <button type="submit">Download</button>
+  </form>
 
-  <!-- Replace the URLs below with your extracted TikTok URLs -->
-  <a href="/download-video?url=https://v19.tiktokcdn.com/ea152a0cf164bd2aad53457c8a9e0067/693493f3/video.mp4">
-    Download No-WM Video
-  </a>
-  <br><br>
-  <a href="/download-video?url=https://v19.tiktokcdn.com/2900a2773d4c30ec233006f3e637e40c/693493f3/video.mp4">
-    Download WM Video
-  </a>
-  <br><br>
-  <a href="/download-audio?url=https://sf16-ies-music-va.tiktokcdn.com/obj/ies-music-ttp-dup-us/7482516292772186923.mp3">
-    Download Audio
-  </a>
+  <script>
+    const form = document.getElementById("downloadForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = document.getElementById("url").value;
+      const type = document.getElementById("type").value;
+
+      // Send request to server
+      const response = await fetch("/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, type })
+      });
+
+      if (!response.ok) return alert("Download failed!");
+
+      // Create a blob and trigger browser download
+      const blob = await response.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `tiktok.${type === "audio" ? "mp3" : "mp4"}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+  </script>
 </body>
 </html>
