@@ -18,34 +18,50 @@
 
   <div id="result"></div>
 
-  <script>
-    async function downloadTikTok() {
-      const url = document.getElementById('url').value;
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = "⏳ Fetching...";
+<script>
+async function downloadTikTok() {
+  const url = document.getElementById('url').value;
+  const resultDiv = document.getElementById('result');
+  resultDiv.innerHTML = "⏳ Fetching...";
 
-      try {
-        const res = await fetch(`/api/tiktok?url=${encodeURIComponent(url)}`);
-        const data = await res.json();
+  try {
+    const res = await fetch(`/api/tiktok?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
 
-        if (data.error) {
-          resultDiv.innerHTML = "❌ " + data.error;
-          return;
-        }
-
-        resultDiv.innerHTML = `
-          <h2>${data.title}</h2>
-          <p>⬇️ <a href="${data.noWatermark}" target="_blank">Download No-Watermark Video</a></p>
-          <p>⬇️ <a href="${data.watermark}" target="_blank">Download Watermark Video</a></p>
-          <p>🎧 <a href="${data.audio}" target="_blank">Download Audio</a></p>
-          <video controls src="${data.noWatermark}"></video>
-          <audio controls src="${data.audio}"></audio>
-        `;
-      } catch (err) {
-        console.error(err);
-        resultDiv.innerHTML = "❌ Failed to fetch video.";
-      }
+    if (data.error) {
+      resultDiv.innerHTML = "❌ " + data.error;
+      return;
     }
-  </script>
+
+    resultDiv.innerHTML = `<h2>${data.title}</h2><p>Downloading...</p>`;
+
+    // Helper to download file
+    const downloadFile = (fileUrl, filename) => {
+      const a = document.createElement("a");
+      a.href = fileUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    // Automatically download files
+    downloadFile(data.noWatermark, `${data.title}.mp4`);
+    // Optional: download audio too
+    // downloadFile(data.audio, `${data.title}.mp3`);
+
+    // Optional: show preview
+    resultDiv.innerHTML += `
+      <video controls src="${data.noWatermark}" style="margin-top:1rem;max-width:90%;"></video>
+      <audio controls src="${data.audio}" style="margin-top:1rem;max-width:90%;"></audio>
+    `;
+
+  } catch (err) {
+    console.error(err);
+    resultDiv.innerHTML = "❌ Failed to fetch video.";
+  }
+}
+</script>
+
 </body>
 </html>
