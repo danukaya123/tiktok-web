@@ -3,35 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TikTok Video Downloader</title>
+  <title>Quizontal TikTok Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
   <div class="w-full max-w-xl bg-white rounded-xl shadow-lg p-6">
-    <h1 class="text-2xl font-bold text-center mb-6">📥 TikTok Video Downloader</h1>
+    <h1 class="text-3xl font-bold text-center mb-6">📥 Quizontal TikTok Downloader</h1>
 
     <input
       type="text"
-      id="tiktok-url"
+      id="tt-url"
       placeholder="Paste TikTok video URL here"
       class="border p-3 rounded w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
 
     <button
-      id="fetchBtn"
+      id="fetchTtBtn"
       class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded w-full font-semibold transition"
     >
       Get Video
     </button>
 
-    <div id="status" class="mt-6"></div>
+    <div id="tt-status" class="mt-6"></div>
   </div>
 
   <script>
-    const status = document.getElementById("status");
+    const status = document.getElementById("tt-status");
 
-    document.getElementById("fetchBtn").addEventListener("click", async () => {
-      const url = document.getElementById("tiktok-url").value.trim();
+    document.getElementById("fetchTtBtn").addEventListener("click", async () => {
+      const url = document.getElementById("tt-url").value.trim();
       if (!url) return alert("Please paste a TikTok video URL!");
 
       status.innerHTML = "<p class='text-gray-600'>Fetching video info...</p>";
@@ -41,23 +42,19 @@
         const data = await res.json();
 
         if (!data.ok) {
-          status.innerHTML = `<p class="text-red-500">${data.message || data.error}</p>`;
+          status.innerHTML = `<p class="text-red-500">${data.message}</p>`;
           return;
         }
 
-        const { title, thumbnail, urls } = data;
-        const safeTitle = title.replace(/[^\w\s-]/g, "").replace(/\s+/g, "_").toLowerCase();
+        const { title, download_mp4_1, download_mp4_hd } = data.result;
 
-        // Clear previous
-        status.innerHTML = `
-          <h2 class="text-lg font-semibold mb-2">${title}</h2>
-          ${thumbnail ? `<img src="${thumbnail}" class="w-full max-w-md rounded mb-4"/>` : ""}
-        `;
+        // Clear previous buttons
+        status.innerHTML = `<h2 class="text-lg font-semibold mb-2 truncate">${title}</h2>`;
 
         const container = document.createElement("div");
         container.className = "flex gap-2 flex-wrap";
 
-        const createBtn = (label, videoUrl) => {
+        const createDownloadButton = (label, videoUrl) => {
           const btn = document.createElement("button");
           btn.textContent = label;
           btn.className = "bg-green-600 hover:bg-green-700 text-white p-2 rounded font-medium transition";
@@ -69,17 +66,17 @@
           return btn;
         };
 
-        if (urls.hd) container.appendChild(createBtn("HD", urls.hd));
-        if (urls.mp4_1) container.appendChild(createBtn("MP4_1", urls.mp4_1));
-        if (urls.mp4_2) container.appendChild(createBtn("MP4_2", urls.mp4_2));
+        container.appendChild(createDownloadButton("HD", download_mp4_hd || download_mp4_1));
+        container.appendChild(createDownloadButton("SD", download_mp4_1));
 
         status.appendChild(container);
 
       } catch (e) {
         console.error(e);
-        status.innerHTML = "<p class='text-red-500'>Failed to fetch video. Try again.</p>";
+        status.innerHTML = "<p class='text-red-500'>Failed to fetch video</p>";
       }
     });
   </script>
+
 </body>
 </html>
