@@ -1,52 +1,38 @@
 const express = require("express");
 const fetch = require("node-fetch");
+const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// Serve static frontend files
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
 
-// Route to download TikTok video
-app.get("/download-video", async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.status(400).send("Missing URL");
+app.post("/download", async (req, res) => {
+  const { url, type } = req.body; // type = 'video' | 'audio'
 
   try {
+    // Fetch the TikTok media
     const response = await fetch(url);
-    const buffer = await response.buffer();
+    if (!response.ok) return res.status(400).send("Failed to fetch media.");
 
-    res.set({
-      "Content-Type": "video/mp4",
-      "Content-Disposition": "attachment; filename=tiktok_video.mp4"
-    });
+    // Set headers to force download
+    const contentType = type === "audio" ? "audio/mpeg" : "video/mp4";
+    const ext = type === "audio" ? "mp3" : "mp4";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="tiktok.${ext}"`
+    );
 
-    res.send(buffer);
+    // Pipe the response to the browser
+    response.body.pipe(res);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Download failed");
+    res.status(500).send("Error downloading media.");
   }
 });
 
-// Route to download TikTok audio
-app.get("/download-audio", async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.status(400).send("Missing URL");
-
-  try {
-    const response = await fetch(url);
-    const buffer = await response.buffer();
-
-    res.set({
-      "Content-Type": "audio/mpeg",
-      "Content-Disposition": "attachment; filename=tiktok_audio.mp3"
-    });
-
-    res.send(buffer);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Download failed");
-  }
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
-
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
