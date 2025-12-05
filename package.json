@@ -1,0 +1,25 @@
+{
+  "name": "fb-video-downloader",
+  "version": "1.0.0",
+  "description": "Facebook video downloader website with serverless API",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev",
+    "build": "echo 'No build step required for static frontend'"
+  },
+  "keywords": [
+    "facebook",
+    "video",
+    "downloader",
+    "vercel",
+    "serverless"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@mrnima/tiktok-downloader": "^1.0.0",
+    "he": "^1.2.0",
+    "node-fetch": "^3.3.2"
+  }
+}
