@@ -1,28 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TikTok Downloader</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; }
-    input { width: 60%; padding: 0.5rem; font-size: 1rem; }
-    button { padding: 0.5rem 1rem; font-size: 1rem; margin-left: 0.5rem; }
-    video, audio { margin-top: 1rem; max-width: 90%; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Downloader</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; }
+  input { width: 60%; padding: 0.5rem; font-size: 1rem; }
+  button { padding: 0.5rem 1rem; font-size: 1rem; margin: 0.5rem; cursor: pointer; }
+  img { max-width: 200px; margin-top: 1rem; }
+</style>
 </head>
 <body>
-  <h1>📥 TikTok Downloader</h1>
-  <input type="text" id="url" placeholder="Paste TikTok link here" />
-  <button onclick="downloadTikTok()">Download</button>
+<h1>📥 TikTok Downloader</h1>
+<input type="text" id="url" placeholder="Paste TikTok link here" />
+<button onclick="fetchTikTok()">Download</button>
 
-  <div id="result"></div>
+<div id="result"></div>
 
 <script>
-async function downloadTikTok() {
-  const url = document.getElementById('url').value;
+async function fetchTikTok() {
+  const url = document.getElementById('url').value.trim();
   const resultDiv = document.getElementById('result');
   resultDiv.innerHTML = "⏳ Fetching...";
+
+  if (!url) {
+    resultDiv.innerHTML = "❌ Please enter a TikTok URL.";
+    return;
+  }
 
   try {
     const res = await fetch(`/api/tiktok?url=${encodeURIComponent(url)}`);
@@ -33,27 +38,13 @@ async function downloadTikTok() {
       return;
     }
 
-    resultDiv.innerHTML = `<h2>${data.title}</h2><p>Downloading...</p>`;
-
-    // Helper to download file
-    const downloadFile = (fileUrl, filename) => {
-      const a = document.createElement("a");
-      a.href = fileUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-
-    // Automatically download files
-    downloadFile(data.noWatermark, `${data.title}.mp4`);
-    // Optional: download audio too
-    // downloadFile(data.audio, `${data.title}.mp3`);
-
-    // Optional: show preview
-    resultDiv.innerHTML += `
-      <video controls src="${data.noWatermark}" style="margin-top:1rem;max-width:90%;"></video>
-      <audio controls src="${data.audio}" style="margin-top:1rem;max-width:90%;"></audio>
+    resultDiv.innerHTML = `
+      <h2>${data.title}</h2>
+      <img src="${data.thumbnail}" alt="Thumbnail" />
+      <div>
+        <button onclick="downloadFile('${data.noWatermark}', '${data.title}.mp4')">⬇️ Download Video</button>
+        <button onclick="downloadFile('${data.audio}', '${data.title}.mp3')">🎧 Download Audio</button>
+      </div>
     `;
 
   } catch (err) {
@@ -61,7 +52,16 @@ async function downloadTikTok() {
     resultDiv.innerHTML = "❌ Failed to fetch video.";
   }
 }
-</script>
 
+// Helper to download files
+function downloadFile(fileUrl, filename) {
+  const a = document.createElement('a');
+  a.href = fileUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
 </body>
 </html>
