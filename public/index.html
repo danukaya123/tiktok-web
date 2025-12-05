@@ -1,51 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TikTok Downloader</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; }
-    input { width: 60%; padding: 0.5rem; font-size: 1rem; }
-    button { padding: 0.5rem 1rem; font-size: 1rem; margin-left: 0.5rem; }
-    video, audio { margin-top: 1rem; max-width: 90%; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Downloader</title>
 </head>
 <body>
-  <h1>📥 TikTok Downloader</h1>
-  <input type="text" id="url" placeholder="Paste TikTok link here" />
-  <button onclick="downloadTikTok()">Download</button>
+  <h1>TikTok Downloader</h1>
 
-  <div id="result"></div>
+  <p>Click below to download:</p>
 
-  <script>
-    async function downloadTikTok() {
-      const url = document.getElementById('url').value;
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = "⏳ Fetching...";
-
-      try {
-        const res = await fetch(`/api/tiktok?url=${encodeURIComponent(url)}`);
-        const data = await res.json();
-
-        if (data.error) {
-          resultDiv.innerHTML = "❌ " + data.error;
-          return;
-        }
-
-        resultDiv.innerHTML = `
-          <h2>${data.title}</h2>
-          <p>⬇️ <a href="${data.noWatermark}" target="_blank">Download No-Watermark Video</a></p>
-          <p>⬇️ <a href="${data.watermark}" target="_blank">Download Watermark Video</a></p>
-          <p>🎧 <a href="${data.audio}" target="_blank">Download Audio</a></p>
-          <video controls src="${data.noWatermark}"></video>
-          <audio controls src="${data.audio}"></audio>
-        `;
-      } catch (err) {
-        console.error(err);
-        resultDiv.innerHTML = "❌ Failed to fetch video.";
-      }
-    }
-  </script>
+  <!-- Replace the URLs below with your extracted TikTok URLs -->
+  <a href="/download-video?url=https://v19.tiktokcdn.com/ea152a0cf164bd2aad53457c8a9e0067/693493f3/video.mp4">
+    Download No-WM Video
+  </a>
+  <br><br>
+  <a href="/download-video?url=https://v19.tiktokcdn.com/2900a2773d4c30ec233006f3e637e40c/693493f3/video.mp4">
+    Download WM Video
+  </a>
+  <br><br>
+  <a href="/download-audio?url=https://sf16-ies-music-va.tiktokcdn.com/obj/ies-music-ttp-dup-us/7482516292772186923.mp3">
+    Download Audio
+  </a>
 </body>
 </html>
