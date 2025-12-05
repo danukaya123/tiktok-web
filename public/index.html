@@ -8,29 +8,32 @@
   body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; }
   input { width: 60%; padding: 0.5rem; font-size: 1rem; }
   button { padding: 0.5rem 1rem; font-size: 1rem; margin: 0.5rem; cursor: pointer; }
-  img { max-width: 200px; margin-top: 1rem; }
+  img { max-width: 200px; margin-top: 1rem; border-radius: 8px; }
 </style>
 </head>
 <body>
 <h1>📥 TikTok Downloader</h1>
 <input type="text" id="url" placeholder="Paste TikTok link here" />
-<button onclick="fetchTikTok()">Download</button>
+<button onclick="fetchTikTokInfo()">Download</button>
 
 <div id="result"></div>
 
 <script>
-async function fetchTikTok() {
-  const url = document.getElementById('url').value.trim();
+let tiktokUrl = "";
+let tiktokTitle = "";
+
+async function fetchTikTokInfo() {
+  tiktokUrl = document.getElementById('url').value.trim();
   const resultDiv = document.getElementById('result');
   resultDiv.innerHTML = "⏳ Fetching...";
 
-  if (!url) {
+  if (!tiktokUrl) {
     resultDiv.innerHTML = "❌ Please enter a TikTok URL.";
     return;
   }
 
   try {
-    const res = await fetch(`/api/tiktok?url=${encodeURIComponent(url)}`);
+    const res = await fetch(`/api/tiktok-info?url=${encodeURIComponent(tiktokUrl)}`);
     const data = await res.json();
 
     if (data.error) {
@@ -38,29 +41,26 @@ async function fetchTikTok() {
       return;
     }
 
+    tiktokTitle = data.title;
+
     resultDiv.innerHTML = `
       <h2>${data.title}</h2>
       <img src="${data.thumbnail}" alt="Thumbnail" />
       <div>
-        <button onclick="downloadFile('${data.noWatermark}', '${data.title}.mp4')">⬇️ Download Video</button>
-        <button onclick="downloadFile('${data.audio}', '${data.title}.mp3')">🎧 Download Audio</button>
+        <button onclick="downloadMedia('video')">⬇️ Download Video</button>
+        <button onclick="downloadMedia('audio')">🎧 Download Audio</button>
       </div>
     `;
 
   } catch (err) {
     console.error(err);
-    resultDiv.innerHTML = "❌ Failed to fetch video.";
+    resultDiv.innerHTML = "❌ Failed to fetch video info.";
   }
 }
 
-// Helper to download files
-function downloadFile(fileUrl, filename) {
-  const a = document.createElement('a');
-  a.href = fileUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+function downloadMedia(type) {
+  const url = `/api/tiktok-download?url=${encodeURIComponent(tiktokUrl)}&type=${type}&title=${encodeURIComponent(tiktokTitle)}`;
+  window.location.href = url; // triggers browser download
 }
 </script>
 </body>
