@@ -20,6 +20,7 @@
   "dependencies": {
     "@mrnima/tiktok-downloader": "^1.0.0",
     "he": "^1.2.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "express": "^5.2.1"
   }
 }
