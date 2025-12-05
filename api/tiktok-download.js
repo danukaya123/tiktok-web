@@ -12,14 +12,17 @@ module.exports = async function handler(req, res) {
 
   try {
     // Clean title
-    const safeTitle = he.decode(title)
-      .normalize("NFC")
-      .replace(/[\u200B-\u200D\uFEFF]/g, "")
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "_")
-      .toLowerCase();
+const safeTitle = he.decode(title)
+  .normalize("NFC")
+  .replace(/[\u200B-\u200D\uFEFF]/g, "")
+  .replace(/[^\w\s-]/g, "")
+  .replace(/\s+/g, "_")
+  .toLowerCase();
 
-    const filename = type === "audio" ? `${safeTitle}.mp3` : `${safeTitle}.mp4`;
+// Add Quizontal prefix
+const filename = type === "audio"
+  ? `quizontal_${safeTitle}.mp3`
+  : `quizontal_${safeTitle}.mp4`;
 
     // Fetch TikTok download URLs
     const tikwmRes = await fetch("https://www.tikwm.com/api/", {
