@@ -1421,271 +1421,313 @@
     </div>
 
     <!-- JavaScript -->
-    <script>
-        // Initialize Lucide icons
+<script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // ========== MOBILE MENU ==========
+    function toggleMobileMenu() {
+        const mobileMenu = document.getElementById('mobileMenu');
+        mobileMenu.classList.toggle('active');
+        document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto';
+    }
+
+    function closeMobileMenu() {
+        document.getElementById('mobileMenu').classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    // ========== NOTIFICATION SYSTEM ==========
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const messageEl = document.getElementById('notificationMessage');
+        const icon = notification.querySelector('.notification-icon i');
+        
+        messageEl.textContent = message;
+        notification.className = 'notification';
+        
+        if (type === 'error') {
+            notification.classList.add('error');
+            icon.setAttribute('data-lucide', 'alert-circle');
+            icon.classList.remove('text-green-500');
+            icon.classList.add('text-red-500');
+        } else if (type === 'warning') {
+            notification.classList.add('warning');
+            icon.setAttribute('data-lucide', 'alert-triangle');
+            icon.classList.remove('text-green-500');
+            icon.classList.add('text-yellow-500');
+        } else {
+            icon.setAttribute('data-lucide', 'check-circle');
+            icon.classList.remove('text-red-500', 'text-yellow-500');
+            icon.classList.add('text-green-500');
+        }
+        
         lucide.createIcons();
-
-        // ========== MOBILE MENU ==========
-        function toggleMobileMenu() {
-            const mobileMenu = document.getElementById('mobileMenu');
-            mobileMenu.classList.toggle('active');
-            document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto';
-        }
-
-        function closeMobileMenu() {
-            document.getElementById('mobileMenu').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-
-        // ========== NOTIFICATION SYSTEM ==========
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            const messageEl = document.getElementById('notificationMessage');
-            const icon = notification.querySelector('.notification-icon i');
-            
-            messageEl.textContent = message;
-            notification.className = 'notification';
-            
-            if (type === 'error') {
-                notification.classList.add('error');
-                icon.setAttribute('data-lucide', 'alert-circle');
-                icon.classList.remove('text-green-500');
-                icon.classList.add('text-red-500');
-            } else if (type === 'warning') {
-                notification.classList.add('warning');
-                icon.setAttribute('data-lucide', 'alert-triangle');
-                icon.classList.remove('text-green-500');
-                icon.classList.add('text-yellow-500');
-            } else {
-                icon.setAttribute('data-lucide', 'check-circle');
-                icon.classList.remove('text-red-500', 'text-yellow-500');
-                icon.classList.add('text-green-500');
-            }
-            
-            lucide.createIcons();
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 4000);
-        }
-
-        // ========== TIKTOK VIDEO DOWNLOADER ==========
-        const tiktokUrlInput = document.getElementById('tiktokUrlInput');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const videoInfoCard = document.getElementById('videoInfoCard');
+        notification.classList.add('show');
         
-        let tiktokUrl = "";
-        let tiktokTitle = "";
-        
-        // Validate TikTok URL
-        function isValidTikTokUrl(url) {
-            const patterns = [
-                /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@.*\/video\/.*/,
-                /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/.*\/video\/.*/,
-                /(?:https?:\/\/)?(?:vm\.)?tiktok\.com\/.*/,
-                /(?:https?:\/\/)?(?:vt\.)?tiktok\.com\/.*/
-            ];
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 4000);
+    }
+
+    // ========== TIKTOK VIDEO DOWNLOADER (SIMPLIFIED) ==========
+    const tiktokUrlInput = document.getElementById('tiktokUrlInput');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const videoInfoCard = document.getElementById('videoInfoCard');
+    
+    let currentVideoData = null;
+
+    // Validate TikTok URL
+    function isValidTikTokUrl(url) {
+        const patterns = [
+            /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@.*\/video\/.*/,
+            /(?:https?:\/\/)?(?:www\.)?tiktok\.com\/.*\/video\/.*/,
+            /(?:https?:\/\/)?(?:vm\.)?tiktok\.com\/.*/,
+            /(?:https?:\/\/)?(?:vt\.)?tiktok\.com\/.*/
+        ];
+        return patterns.some(pattern => pattern.test(url));
+    }
+
+    // Single API call for everything
+    async function callTikTokApi(action, params = {}) {
+        try {
+            const queryParams = new URLSearchParams(params).toString();
+            const response = await fetch(`/api/tiktok?${queryParams}`);
             
-            return patterns.some(pattern => pattern.test(url));
-        }
-        
-        // Fetch TikTok video info from API
-        async function fetchTikTokInfo(url) {
-            try {
-                downloadBtn.disabled = true;
-                downloadBtn.classList.add('loading');
-                downloadBtn.innerHTML = 'Processing...';
-                
-                const response = await fetch(`/api/tiktok-info?url=${encodeURIComponent(url)}`);
+            if (action === 'info') {
                 const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error || 'Failed to fetch video info');
-                }
-                
+                if (!data.ok) throw new Error(data.error || 'Failed to fetch video');
                 return data;
-            } catch (error) {
-                throw error;
-            } finally {
-                downloadBtn.disabled = false;
-                downloadBtn.classList.remove('loading');
-                downloadBtn.innerHTML = '<i data-lucide="download" class="h-5 w-5 mr-3 inline"></i>Download TikTok Video';
             }
+            
+            // For download, response is the file
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // Fetch and display video info
+    async function fetchVideoInfo() {
+        const url = tiktokUrlInput.value.trim();
+        
+        if (!url) {
+            showNotification('Please enter a TikTok URL', 'warning');
+            tiktokUrlInput.focus();
+            return;
         }
         
-        // Display TikTok video info
-        function displayVideoInfo(videoData) {
-            const { title, thumbnail } = videoData;
-            tiktokTitle = title;
+        if (!isValidTikTokUrl(url)) {
+            showNotification('Please enter a valid TikTok URL', 'error');
+            return;
+        }
+        
+        try {
+            downloadBtn.disabled = true;
+            downloadBtn.classList.add('loading');
+            downloadBtn.innerHTML = 'Processing...';
             
-            const videoInfoHTML = `
-                ${thumbnail ? `
-                    <div class="video-thumbnail-container">
-                        <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
+            const videoData = await callTikTokApi('info', { url });
+            currentVideoData = videoData;
+            
+            displayVideoInfo(videoData);
+            showNotification('Video loaded! Choose format', 'success');
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification(error.message || 'Failed to fetch video', 'error');
+        } finally {
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('loading');
+            downloadBtn.innerHTML = '<i data-lucide="download" class="h-5 w-5 mr-3 inline"></i>Download TikTok Video';
+        }
+    }
+
+    // Display video info
+    function displayVideoInfo(videoData) {
+        const { title, thumbnail, author, duration } = videoData;
+        
+        const videoInfoHTML = `
+            ${thumbnail ? `
+                <div class="video-thumbnail-container">
+                    <img src="${thumbnail}" alt="${title}" class="video-thumbnail">
+                </div>
+            ` : ''}
+            
+            <h2 class="video-title">${title}</h2>
+            
+            <div class="flex justify-center items-center gap-6 mb-8 text-gray-600">
+                ${author ? `
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="user" class="h-4 w-4"></i>
+                        <span>${author}</span>
                     </div>
                 ` : ''}
-                
-                <h2 class="video-title">${title}</h2>
-                
-                <div class="download-options">
-                    <div class="download-option">
-                        <span class="format-badge video">VIDEO FORMAT</span>
-                        <h4>Video with Audio</h4>
-                        <p>Download the complete TikTok video with audio in MP4 format. High quality, ready to share.</p>
-                        <button class="download-option-btn" onclick="downloadTikTokMedia('video')">
-                            <i data-lucide="video" class="h-4 w-4 mr-2"></i>
-                            Download Video
-                        </button>
+                ${duration ? `
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="clock" class="h-4 w-4"></i>
+                        <span>${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}</span>
                     </div>
-                    
-                    <div class="download-option">
-                        <span class="format-badge audio">AUDIO FORMAT</span>
-                        <h4>Audio Only</h4>
-                        <p>Extract and download just the audio from the TikTok video in MP3 format. Perfect for music.</p>
-                        <button class="download-option-btn" onclick="downloadTikTokMedia('audio')">
-                            <i data-lucide="music" class="h-4 w-4 mr-2"></i>
-                            Download Audio
-                        </button>
-                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="download-options">
+                <div class="download-option">
+                    <span class="format-badge video">VIDEO FORMAT</span>
+                    <h4>Video with Audio</h4>
+                    <p>Download the complete TikTok video with audio in MP4 format.</p>
+                    <button class="download-option-btn" onclick="downloadTikTokMedia('video')">
+                        <i data-lucide="video" class="h-4 w-4 mr-2"></i>
+                        Download Video
+                    </button>
                 </div>
-            `;
-            
-            videoInfoCard.innerHTML = videoInfoHTML;
-            videoInfoCard.classList.add('show');
-            
-            setTimeout(() => {
-                videoInfoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
-            
-            lucide.createIcons();
+                
+                <div class="download-option">
+                    <span class="format-badge audio">AUDIO FORMAT</span>
+                    <h4>Audio Only</h4>
+                    <p>Extract just the audio in MP3 format.</p>
+                    <button class="download-option-btn" onclick="downloadTikTokMedia('audio')">
+                        <i data-lucide="music" class="h-4 w-4 mr-2"></i>
+                        Download Audio
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        videoInfoCard.innerHTML = videoInfoHTML;
+        videoInfoCard.classList.add('show');
+        
+        setTimeout(() => {
+            videoInfoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+        
+        lucide.createIcons();
+    }
+
+    // Download TikTok media
+    async function downloadTikTokMedia(type) {
+        if (!currentVideoData) {
+            showNotification('Please load a video first', 'warning');
+            return;
         }
         
-        // Download TikTok media
-        function downloadTikTokMedia(type) {
-            if (!tiktokUrl) {
-                showNotification('Please enter a TikTok URL first', 'warning');
-                return;
-            }
+        const button = event.target;
+        const originalText = button.innerHTML;
+        
+        // Show loading
+        button.classList.add('loading');
+        button.innerHTML = 'Downloading...';
+        
+        try {
+            // Create safe filename
+            const safeTitle = currentVideoData.title
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '_')
+                .toLowerCase();
             
-            const button = event.target;
-            const originalText = button.innerHTML;
+            const filename = `tiktok_${safeTitle}_${type}.${type === 'video' ? 'mp4' : 'mp3'}`;
             
-            // Show loading spinner
-            button.classList.add('loading');
-            button.innerHTML = 'Preparing...';
+            // Direct download using the single API
+            const downloadUrl = `/api/tiktok?action=download&url=${encodeURIComponent(tiktokUrlInput.value)}&type=${type}&title=${encodeURIComponent(currentVideoData.title)}`;
             
-            // Download the media
-            const url = `/api/tiktok-download?url=${encodeURIComponent(tiktokUrl)}&type=${type}&title=${encodeURIComponent(tiktokTitle)}`;
-            
-            // Create invisible download link
             const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.download = `${tiktokTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${type}.${type === 'video' ? 'mp4' : 'mp3'}`;
+            downloadLink.href = downloadUrl;
+            downloadLink.download = filename;
             downloadLink.style.display = 'none';
             
-            // Trigger download
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
             
-            // Show success notification
             showNotification(`${type === 'video' ? 'Video' : 'Audio'} download started!`, 'success');
-            
-            // Reset button after delay
+        } catch (error) {
+            console.error('Download error:', error);
+            showNotification('Download failed', 'error');
+        } finally {
             setTimeout(() => {
                 button.classList.remove('loading');
                 button.innerHTML = originalText;
                 lucide.createIcons();
             }, 2000);
         }
-        
-        // Handle download button click
-        downloadBtn.addEventListener('click', async () => {
-            const url = tiktokUrlInput.value.trim();
-            tiktokUrl = url;
-            
-            if (!url) {
-                showNotification('Please enter a TikTok video URL', 'warning');
-                tiktokUrlInput.focus();
-                return;
-            }
-            
-            if (!isValidTikTokUrl(url)) {
-                showNotification('Please enter a valid TikTok video URL. Make sure it includes "tiktok.com" and points to a video.', 'error');
-                return;
-            }
-            
-            try {
-                const videoData = await fetchTikTokInfo(url);
-                displayVideoInfo(videoData);
-                showNotification('Video information loaded successfully! Choose your preferred format.', 'success');
-            } catch (error) {
-                console.error('Error:', error);
-                showNotification(error.message || 'Failed to fetch video. Please check the URL and try again.', 'error');
-            }
-        });
-        
-        // Handle Enter key press
-        tiktokUrlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                downloadBtn.click();
-            }
-        });
-        
-        // ========== NEWSLETTER FORM ==========
-        const newsletterForm = document.getElementById('newsletterForm');
-        if (newsletterForm) {
-            newsletterForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const email = newsletterForm.querySelector('input[type="email"]').value;
-                if (email) {
-                    showNotification('Thank you for subscribing to our newsletter!', 'success');
-                    newsletterForm.reset();
-                }
-            });
+    }
+
+    // Handle main download button click
+    downloadBtn.addEventListener('click', fetchVideoInfo);
+
+    // Handle Enter key
+    tiktokUrlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') fetchVideoInfo();
+    });
+
+    // URL validation styling
+    tiktokUrlInput.addEventListener('input', function() {
+        if (isValidTikTokUrl(this.value)) {
+            this.style.borderColor = '#10b981';
+            this.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.15), inset 0 2px 6px rgba(0, 0, 0, 0.05)';
+        } else if (this.value.length > 10) {
+            this.style.borderColor = '#ef4444';
+            this.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.15), inset 0 2px 6px rgba(0, 0, 0, 0.05)';
+        } else {
+            this.style.borderColor = '#e2e8f0';
+            this.style.boxShadow = 'inset 0 2px 6px rgba(0, 0, 0, 0.05)';
         }
-        
-        // ========== INPUT VALIDATION STYLING ==========
-        tiktokUrlInput.addEventListener('input', function() {
-            if (isValidTikTokUrl(this.value)) {
-                this.style.borderColor = '#10b981';
-                this.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.15), inset 0 2px 6px rgba(0, 0, 0, 0.05)';
-            } else if (this.value.length > 10) {
-                this.style.borderColor = '#ef4444';
-                this.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.15), inset 0 2px 6px rgba(0, 0, 0, 0.05)';
-            } else {
-                this.style.borderColor = '#e2e8f0';
-                this.style.boxShadow = 'inset 0 2px 6px rgba(0, 0, 0, 0.05)';
+    });
+
+    // ========== NEWSLETTER FORM ==========
+    const newsletterForm = document.getElementById('newsletterForm');
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = newsletterForm.querySelector('input[type="email"]').value;
+            if (email) {
+                showNotification('Thank you for subscribing to our newsletter!', 'success');
+                newsletterForm.reset();
             }
         });
-        
-        // ========== MANUAL PASTE BUTTON ==========
-        const pasteButton = document.createElement('button');
-        pasteButton.type = 'button';
-        pasteButton.innerHTML = '<i data-lucide="clipboard-paste" class="h-5 w-5"></i>';
-        pasteButton.className = 'absolute right-4 top-1/2 transform -translate-y-1/2 bg-gray-100 hover:bg-gray-200 text-gray-600 p-2.5 rounded-lg transition-colors';
-        pasteButton.title = 'Paste from clipboard';
-        pasteButton.style.zIndex = '3';
-        
-        pasteButton.addEventListener('click', async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text && isValidTikTokUrl(text)) {
-                    tiktokUrlInput.value = text;
-                    tiktokUrl = text;
-                    showNotification('TikTok URL pasted from clipboard!', 'success');
-                    tiktokUrlInput.dispatchEvent(new Event('input'));
-                } else if (text) {
-                    showNotification('Clipboard content is not a valid TikTok URL', 'warning');
-                }
-            } catch (err) {
-                showNotification('Unable to access clipboard. Please paste manually.', 'warning');
+    }
+
+    // ========== SMOOTH SCROLLING ==========
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                e.preventDefault();
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
             }
         });
-        
-        document.querySelector('.url-input-wrapper').appendChild(pasteButton);
-        lucide.createIcons();
-    </script>
+    });
+
+    // ========== MANUAL PASTE BUTTON ==========
+    const pasteButton = document.createElement('button');
+    pasteButton.type = 'button';
+    pasteButton.innerHTML = '<i data-lucide="clipboard-paste" class="h-5 w-5"></i>';
+    pasteButton.className = 'absolute right-4 top-1/2 transform -translate-y-1/2 bg-gray-100 hover:bg-gray-200 text-gray-600 p-2.5 rounded-lg transition-colors';
+    pasteButton.title = 'Paste from clipboard';
+    pasteButton.style.zIndex = '3';
+
+    pasteButton.addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && isValidTikTokUrl(text)) {
+                tiktokUrlInput.value = text;
+                showNotification('TikTok URL pasted from clipboard!', 'success');
+                tiktokUrlInput.dispatchEvent(new Event('input'));
+            } else if (text) {
+                showNotification('Not a valid TikTok URL', 'warning');
+            }
+        } catch (err) {
+            showNotification('Unable to access clipboard', 'warning');
+        }
+    });
+
+    document.querySelector('.url-input-wrapper').appendChild(pasteButton);
+    lucide.createIcons();
+</script>
 </body>
 </html>
